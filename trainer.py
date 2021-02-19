@@ -10,10 +10,11 @@ DO_NOTHING_ACTION = 1
 
 
 class Trainer:
-    def __init__(self, args, actor):
+    def __init__(self, args, actor, env):
         self._args = args
+        self._env = env
         self._actor = actor
-        self._env = gym.make('MountainCar-v0')
+        
         
     
     def current_frame(self):
@@ -30,9 +31,11 @@ class Trainer:
     def run(self):
         self._env.reset()
         for e_i in range(self._args.episodes):
+            s_i = 0
             done = False
             first_state = True
             while not done:
+                s_i += 1
                 state = torch.zeros(1, 2, 84, 84)
                 # Add current frame to state
                 #state[:, 0] = current_frame()
@@ -67,7 +70,7 @@ class Trainer:
                     self._actor.train()
 
                 prev_state = state
-            print("Episode", e_i)
+            print("Episode", e_i, "steps", s_i)
             self._env.reset()
             self._actor.save()
 

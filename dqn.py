@@ -30,32 +30,54 @@ class DQNActor:
         return self.get_action(self._dqnet(x))
     
     def get_action(self, q_values, argmax=False):
-        
+        q_values = torch.squeeze(q_values)
         if argmax or self.epsilon_threshold() >= np.random.rand():
             # Perform random action
-            action = torch.tensor([np.random.randint(q_values.shape[1], size=q_values.shape[0])])
+            action = np.random.randint(1)
         else:
             with torch.no_grad():
                 # Perfrom action that maximizes expected return
-                action =  q_values.max(1)[1].detach().view(-1, 1)
-        action = int(action[0,0])
-        return action, q_values[0, action]
+                action =  q_values.max(0)[1]
+        action = int(action)
+        return action, q_values[action]
     
     def train(self):
         """Train Q-Network over batch of sampled experience."""
         # Get sample of experience
         exs = self._replay_memory.sample()
-        q_values = torch.zeros(self._args.batch_size)#torch.Tensor([self._dqnet(e_t.state)[e_t.action] for e_t in exps])
+    
         td_targets = torch.zeros(self._args.batch_size)
+        states = torch.zeros(self._args.batch_size, 2, 84, 84)
+        next_states = torch.zeros(self._args.batch_size, 2, 84, 84)
+        rewards = torch.zeros(self._args.batch_size)
+        next_state_mask = torch.zeros(self._args.batch_size)
+        actions = []
         # Create state-action values
         for i, e_t in enumerate(exs):
-            q_values[i] = self._dqnet(e_t.state)[0, e_t.action]
+            states[i] = e_t.state
+            actions.append(e_t.action)
+            rewards[i] = e_t.reward
             if e_t.next_state is not None:
-                _, next_q_value = self.get_action(
-                    self._dqnet_target(e_t.state),
-                    True)
-                td_targets[i] = e_t.reward + self._args.gamma * next_q_value
+                next_states[i] = e_t.next_state 
+                next_state_mask[i] = 1
+                # _, next_q_value = self.get_action(
+                #     self._dqnet_target(e_t.next_state),
+                #     True)
+                # td_targets[i] = e_t.reward + self._args.gamma * next_q_value
         
+        # Select the q-value for every state
+        q_values = torch.Tensor(
+            [q[actions[i]] for i, q in enumerate(self._dqnet(states))])
+        q = self._dqnet_target(next_states) 
+        for i in range(self._args.batch_size):
+            if next_state_mask[i] == 0:
+                td_targets[i] = rewards[i]
+            else:
+                _, next_q_value = self.get_action(q[i], True)
+                td_targets[i] = rewards[i] + self._args.gamma * next_q_value 
+
+            
+
         # Train model
         loss = self._loss_fn(q_values, td_targets)
         loss.backward()
@@ -86,9 +108,9 @@ class DQNActor:
         return self._replay_memory.current_capacity()
     
     def epsilon_threshold(self):
-        f_1 = self._args.min_epsilon + (self._args.epsilon - self._args.min_epsilon)
-        f_2 =  math.exp(-1. * self._num_steps / self._args.epsilon_decay)
-        return f_1 * f_2
+        return self._args.min_epsilon + (self._args.epsilon - self._args.min_epsilon) * \
+            math.exp(-1. * self._num_steps / self._args.epsilon_decay)
+        #return f_1 * f_2
 
     def save(self):
         torch.save(self._dqnet.state_dict(), self._args.model)
@@ -104,7 +126,7 @@ class DQNActor:
                 self._num_steps = d["num_steps"]
 
 class DQNetwork(nn.Module):
-    def __init__(self, action_dim=3):
+    def __init__(self, action_dim=2):
         super().__init__()
         # 4 input frames, 16 filters of size 8x8
         self.conv1 = nn.Conv2d(2, 16, 8, stride=4)
