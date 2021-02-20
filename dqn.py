@@ -119,7 +119,7 @@ class DQNetwork(nn.Module):
     def __init__(self, args, action_dim=2):
         super().__init__()
         # 4 input frames, 16 filters of size 8x8
-        self.conv1 = nn.Conv2d(1, 16, 8, stride=4)
+        self.conv1 = nn.Conv2d(args.n_frames, 16, 8, stride=4)
         # 32 filter of size 4x4
         self.conv2 = nn.Conv2d(16, 32, 4, stride=2)
         self.flatten = nn.Flatten()
