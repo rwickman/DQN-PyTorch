@@ -48,8 +48,8 @@ class DQNActor:
         exs = self._replay_memory.sample()
     
         td_targets = torch.zeros(self._args.batch_size)
-        states = torch.zeros(self._args.batch_size, 1, self._args.img_dim, self._args.img_dim)
-        next_states = torch.zeros(self._args.batch_size, 1, self._args.img_dim, self._args.img_dim)
+        states = torch.zeros(self._args.batch_size, self._args.n_frames, self._args.img_dim, self._args.img_dim)
+        next_states = torch.zeros(self._args.batch_size, self._args.n_frames, self._args.img_dim, self._args.img_dim)
         rewards = torch.zeros(self._args.batch_size)
         next_state_mask = torch.zeros(self._args.batch_size)
         actions = []
@@ -63,10 +63,8 @@ class DQNActor:
                 next_state_mask[i] = 1
         
         # Select the q-value for every state
-        #print(actions)
         actions = torch.tensor(actions, dtype=torch.int64)
         q_values = self._dqnet(states).gather(1, actions.unsqueeze(0))
-        #torch.Tensor([q[actions[i]] for i, q in enumerate(self._dqnet(states))])
         
         q = self._dqnet_target(next_states) 
         for i in range(self._args.batch_size):
@@ -92,7 +90,6 @@ class DQNActor:
             print("td_targets", td_targets)
             print("replay_len", self.replay_len())
             self._dqnet_target.load_state_dict(self._dqnet.state_dict())
-            #target_net.load_state_dict(policy_net.state_dict())
         
     def add_ex(self, e_t):
         """Add a step of experience."""
@@ -148,5 +145,3 @@ class DQNetwork(nn.Module):
     def _conv2d_out(self, dim, kernel_size, stride):
         # W - F + 2P / S
         return (dim - kernel_size) / stride + 1
-    # def action(self, x):
-    #     if np.random.rand() > 

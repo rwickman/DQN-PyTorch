@@ -37,6 +37,9 @@ if __name__ == "__main__":
         help="Environment to train (e.g., CartPole-v0 or MountainCar-v0).")
     parser.add_argument("--img_dim", type=int, default=132,
         help="The width (and height) of input image.")
+    parser.add_argument("--n_frames", type=int, default=4,
+        help="Number of input frames.")
+
 
 
     main(parser.parse_args())

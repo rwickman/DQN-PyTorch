@@ -31,14 +31,14 @@ class Trainer:
         
         return torch.from_numpy(frame).float().unsqueeze(0).unsqueeze(0)
 
-
     def run(self):
         self._env.reset()
         for e_i in range(self._args.episodes):
             done = False
             total_reward = 0
-            cur_frame = self.current_frame()
-            state = cur_frame
+            cur_frame = self.current_frame()            
+            state = cur_frame.repeat(1,self._args.n_frames,1,1)
+
             while not done:
                 # Get current action
                 action, _ = self._actor(state)
@@ -46,13 +46,11 @@ class Trainer:
                 # Perform action in environment
                 _, reward, done, _ = self._env.step(action)
                 
-                # Update frames
-                prev_frame = cur_frame
-                cur_frame = self.current_frame()
-
                 # Get next state
-                next_state = cur_frame - prev_frame
-               
+                next_state = state
+                next_state = next_state.roll(-1, 1)
+                next_state[:, self._args.n_frames - 1] = self.current_frame()
+
                 # Add memory step
                 if done:
                     next_state = None
@@ -60,17 +58,11 @@ class Trainer:
                 total_reward += reward
                 e_t = Experience(state, action, reward, next_state)
                 self._actor.add_ex(e_t)
-                state = next_state 
-
-                # plt.imshow(state[0].transpose(0,2).transpose(0,1))
-                # plt.show()
+                state = next_state
                 
                 if e_i > 0 and self._actor.replay_len() > self._args.batch_size:
-                    #print(self._actor.replay_len())
                     self._actor.train()
 
-                prev_state = state
-                prev_frame = cur_frame
             print("Episode", e_i, "total reward", total_reward)
             self._env.reset()
             self._actor.save()
