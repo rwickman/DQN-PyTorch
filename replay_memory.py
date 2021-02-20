@@ -1,4 +1,4 @@
-import random
+import numpy as np
 import torch
 from dataclasses import dataclass
 
@@ -29,7 +29,7 @@ class ReplayMemory:
 
     def sample(self):
         """Sample batch size experience replay."""
-        return random.sample(self._memory, self._args.batch_size)
+        return np.random.choice(self._memory, size=self._args.batch_size, replace=False)
 
     def current_capacity(self):
         return len(self._memory)
