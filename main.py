@@ -19,7 +19,7 @@ if __name__ == "__main__":
         help="Epsilon decay step.")
     parser.add_argument("--min_epsilon", type=float, default=0.05,
         help="Minimum epsilon value used for epsilon-greedy.")
-    parser.add_argument("--lr", type=float, default=1e-3,
+    parser.add_argument("--lr", type=float, default=3e-4,
         help="Parameter learning rate.")
     parser.add_argument("--gamma", type=float, default=0.99,
         help="Gamma value used for future reward discount.")
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         help="Batch size of samples.")
     parser.add_argument("--episodes", type=int, default=100000,
         help="Number of episodes to train the model.")
-    parser.add_argument("--target_update_step", type=int, default=200,
+    parser.add_argument("--target_update_step", type=int, default=50,
         help="Number of steps to wait before updating policy.")
     parser.add_argument("--load_model", action="store_true",
         help="Load model paramters.")
@@ -39,6 +39,14 @@ if __name__ == "__main__":
         help="The width (and height) of input image.")
     parser.add_argument("--n_frames", type=int, default=4,
         help="Number of input frames.")
+    parser.add_argument("--eps", type=float, default=1e-6,
+        help="Epsilon used for proportional priority.")
+    parser.add_argument("--alpha", type=float, default=0.6,
+        help="Alpha used for proportional priority.")
+    parser.add_argument("--beta", type=float, default=0.4,
+        help="Beta used for proportional priority.")
+    parser.add_argument("--grad_clip", type=float, default=1.0,
+        help="Gradient clipping.")
 
 
 
