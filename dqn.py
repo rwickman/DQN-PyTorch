@@ -143,7 +143,7 @@ class DQNActor:
         torch.save(model_dict, os.path.join(self.args.save_dir, self.args.model))
         with open(os.path.join(self.args.save_dir, "model_meta.json"), "w") as f:
             json.dump({"num_steps" : self._num_steps}, f)
-        #self._replay_memory.save()
+        self._replay_memory.save()
 
     def load(self):
         model_dict = torch.load(os.path.join(self.args.save_dir, self.args.model))
