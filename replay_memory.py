@@ -2,6 +2,9 @@ import numpy as np
 import torch
 from dataclasses import dataclass
 import random
+import os
+import math
+from config import *
 
 @dataclass
 class Experience:
@@ -37,20 +40,25 @@ class ReplayMemory:
 
 
 class PrioritizedExpReplay:
+    """Prioritized experience replay (PER) memory."""
     def __init__(self, args):
         self.args = args
         self._sum_tree = SumTree(self.args)
+        self._memory_file = os.path.join(self.args.save_dir, "memory.pt")
 
-    def add(self, e_t, error):
+        if self.args.load:
+            self.load()
+    
+    def add(self, exp: Experience, error: float):
         """Append experience."""
+        
         priority = self._compute_priority(error)
-        self._sum_tree.add(e_t, priority)
+        self._sum_tree.add(exp, priority)
 
-    def sample(self, batch_size):
+    def sample(self, batch_size: int):
         """Sample batch size experience replay."""
         segment = self._sum_tree.total() / batch_size
-
-        priorities = torch.zeros(batch_size).cuda()
+        priorities = torch.zeros(batch_size).to(device)
         exps = []
         indices = []
         for i in range(batch_size):
@@ -61,52 +69,84 @@ class PrioritizedExpReplay:
             priorities[i] = p
             exps.append(e_i)
             indices.append(tree_idx)
+
         # Compute importance sampling weights
         sample_ps = priorities / self._sum_tree.total()
-        is_ws = (sample_ps  * self.current_capacity()) ** -self.args.beta
+        
+        # Increase per beta by the number of episodes that have elapsed
+        cur_per_beta = self.args.per_beta#min(self.args.per_beta + (num_updates / self.args.decay_episodes) * (1 - self.args.per_beta) , 1.0)
+
+        is_ws = (sample_ps  * self.cur_cap()) ** -cur_per_beta
+        
+
         # Normalize to scale the updates downwards
         is_ws  = is_ws / is_ws.max()
+
         return is_ws, exps, indices
 
-        #return np.random.choice(self._memory, size=self.args.batch_size, replace=False)
-
-    def current_capacity(self):
-        return self._sum_tree.current_capacity()
+    def cur_cap(self):
+        return self._sum_tree.cur_cap()
 
     def update_priorities(self, indices, errors):
         for idx, error in zip(indices, errors):
             priority = self._compute_priority(error)
             self._sum_tree.update(idx, priority)
 
+    def save(self):
+        model_dict = {
+            "memory" : self._sum_tree.memory,
+            "tree" : self._sum_tree.tree,
+            "pos" : self._sum_tree._end_pos
+        }
+        torch.save(model_dict, self._memory_file)
+        
+    def load(self):
+        if os.path.exists(self._memory_file):
+            model_dict = torch.load(self._memory_file)
+            self._sum_tree.memory = model_dict["memory"]
+            self._sum_tree.tree = model_dict["tree"]            
+            self._sum_tree._end_pos = model_dict["pos"]
+
     def _compute_priority(self, td_error):
-        return (abs(td_error) + self.args.eps) ** self.args.alpha
+        return (abs(td_error) * 100 + self.args.eps) ** self.args.per_alpha 
+
 
 
 class SumTree:
+    """Sum Tree used for PER."""
     def __init__(self, args):
         self.args = args
-        # sum tree
-        self.tree = torch.zeros(2 * self.args.capacity - 1).cuda()
+        # Raise to next power of 2 to make full binary tree
+        self.capacity = 2 ** math.ceil(
+            math.log(self.args.mem_cap,2))
+
+        # sum tree 
+        self.tree = torch.zeros(2 * self.capacity - 1).to(device)
         self.memory = []
+
         # Pointer to end of memory
         self._end_pos = 0
-
-    def add(self, e_t, priority):
+    
+    def add(self, exp, priority):
         """Add experience to sum tree."""
+        
 
+        cur_mem = self.memory
+        end_pos = self._end_pos
+        cur_cap = self.capacity
+        self._end_pos = (self._end_pos + 1) % cur_cap
+        idx = self.capacity + end_pos  - 1
+        
         # Add experience to memory
-        if len(self.memory) < self.args.capacity:
-            self.memory.append(e_t)
+        if len(cur_mem) < cur_cap:
+            cur_mem.append(exp)
         else:
-            self.memory[self._end_pos] = e_t
-
-        idx = self.args.capacity + self._end_pos - 1
-
-        # Update memorysum tree
+            cur_mem[end_pos] = exp
+    
+        # Update sum tree
         self.update(idx, priority)
 
-        # Update end pointer
-        self._end_pos = (self._end_pos + 1) % self.args.capacity
+
 
     def update(self, idx, priority):
         """Update priority of element and propagate through tree."""
@@ -125,17 +165,29 @@ class SumTree:
     def get(self, val):
         """Sample from sum tree based on the sampled value."""
         tree_idx = self._retrieve(val)
-        data_idx = tree_idx - self.args.capacity + 1
-        data = self.memory[data_idx]
+        data_idx = tree_idx - self.capacity + 1
 
+        #data = self.memory[data_idx]
+        try:
+
+            data = self.memory[data_idx]
+        except Exception:
+            print("self.tree[tree_idx]", self.tree[tree_idx], "len(self.tree)", len(self.tree))
+            print("data_idx", data_idx, "tree_idx", tree_idx, self.capacity, val, len(self.memory))
+            print("self.tree", self.tree)
+            import sys
+            sys.exit()
         return self.tree[tree_idx], data, tree_idx
 
     def _retrieve(self, val):
         idx = 0
+        # The left and right children
         left = 2 * idx + 1
         right = 2 * idx + 2
+
+        # Keep going down the tree until leaf node with correct priority reached
         while left < len(self.tree):
-            if val <= self.tree[left]:
+            if val <= self.tree[left] or self.tree[left].isclose(val, atol=1e-2) or not self.tree[right].is_nonzero():
                 idx = left
             else:
                 idx = right
@@ -146,6 +198,6 @@ class SumTree:
 
         return idx
 
-    def current_capacity(self):
+    def cur_cap(self):
         return len(self.memory)
                                     
