@@ -8,11 +8,6 @@ from config import *
 
 from replay_memory import ReplayMemory
 from replay_memory import PrioritizedExpReplay
-from models import *
-# Make the actor seperate from the model
-
-EPS_START = 0.9
-EPS_END = 0.05
 
 class DQNActor:
     def __init__(self, args, action_dim, obs_dim):
@@ -23,7 +18,7 @@ class DQNActor:
         self._dqnet_target = DQNetwork(args, self._action_dim, obs_dim).to(device)
         self._dqnet_target.eval()
         self._replay_memory = PrioritizedExpReplay(self.args)#ReplayMemory(args)
-        self._optimizer = optim.Adam(self._dqnet.parameters(), lr=self.args.lr, eps=10e-3)
+        self._optimizer = optim.Adam(self._dqnet.parameters(), lr=self.args.lr)
         self._epsilon = args.epsilon
         self._loss_fn = nn.SmoothL1Loss()
         self._num_steps = 0
