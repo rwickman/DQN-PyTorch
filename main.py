@@ -15,7 +15,7 @@ if __name__ == "__main__":
         help="Maximum size of replay memory.")
     parser.add_argument("--epsilon", type=float, default=1.0,
         help="Initial epsilon value used for epsilon-greedy.")
-    parser.add_argument("--epsilon_decay", type=int, default=60000,
+    parser.add_argument("--epsilon_decay", type=int, default=100000,
         help="Number of updates steps before minimum epsilon value reached.")
     parser.add_argument("--min_epsilon", type=float, default=0.05,
         help="Minimum epsilon value used for epsilon-greedy.")
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         help="Alpha used for proportional priority.")
     parser.add_argument("--per_beta", type=float, default=0.5,
         help="Beta used for proportional priority.")
-    parser.add_argument("--grad_norm", type=float, default=1.0,
+    parser.add_argument("--grad_norm", type=float, default=2.0,
         help="Max gradient norm.")
     parser.add_argument("--use_grad_norm", action="store_true",
         help="Clip the gradient.")
