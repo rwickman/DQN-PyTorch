@@ -83,7 +83,7 @@ class Trainer:
             self._env.reset()
             print("total_reward", total_reward)
             print("Episode length", num_steps)
-            if e_i % 4 == 0:
+            if e_i % self.args.save_iter == 0:
                 self._agent.save()
                 self.save_results()
 

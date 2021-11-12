@@ -15,8 +15,8 @@ if __name__ == "__main__":
         help="Maximum size of replay memory.")
     parser.add_argument("--epsilon", type=float, default=1.0,
         help="Initial epsilon value used for epsilon-greedy.")
-    parser.add_argument("--epsilon_decay", type=int, default=32000,
-        help="Epsilon decay step.")
+    parser.add_argument("--epsilon_decay", type=int, default=60000,
+        help="Number of updates steps before minimum epsilon value reached.")
     parser.add_argument("--min_epsilon", type=float, default=0.05,
         help="Minimum epsilon value used for epsilon-greedy.")
     parser.add_argument("--lr", type=float, default=3e-4,
@@ -55,7 +55,8 @@ if __name__ == "__main__":
         help="How many episode timesteps elapsed before updating.")
     parser.add_argument("--min_init_state", type=int, default=30000,
         help="Minimum number of initial states before learning starts.")
-
+    parser.add_argument("--save_iter", type=int, default=4,
+        help="How often to save the model.")
 
     
 
