@@ -15,7 +15,7 @@ if __name__ == "__main__":
         help="Maximum size of replay memory.")
     parser.add_argument("--epsilon", type=float, default=1.0,
         help="Initial epsilon value used for epsilon-greedy.")
-    parser.add_argument("--epsilon_decay", type=int, default=2048,
+    parser.add_argument("--epsilon_decay", type=int, default=32000,
         help="Epsilon decay step.")
     parser.add_argument("--min_epsilon", type=float, default=0.05,
         help="Minimum epsilon value used for epsilon-greedy.")
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         help="Batch size of samples.")
     parser.add_argument("--episodes", type=int, default=100000,
         help="Number of episodes to train the model.")
-    parser.add_argument("--target_update_step", type=int, default=128,
+    parser.add_argument("--target_update_step", type=int, default=4096,
         help="Number of steps to wait before updating policy.")
     parser.add_argument("--load", action="store_true",
         help="Load model paramters.")
