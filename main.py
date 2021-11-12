@@ -5,8 +5,6 @@ from trainer import Trainer
 
 def main(args):
     env = gym.make(args.env)
-    #print(env.action_space.n)
-    print("env.observation_space", )
     dqn_actor = DQNActor(args,  env.action_space.n, env.observation_space.shape[0])
     trainer = Trainer(args, dqn_actor, env)
     trainer.run()
@@ -43,14 +41,14 @@ if __name__ == "__main__":
         help="Number of input frames.")
     parser.add_argument("--eps", type=float, default=1e-6,
         help="Epsilon used for proportional priority.")
-    parser.add_argument("--per_alpha", type=float, default=0.6,
+    parser.add_argument("--per_alpha", type=float, default=0.9,
         help="Alpha used for proportional priority.")
     parser.add_argument("--per_beta", type=float, default=0.4,
         help="Beta used for proportional priority.")
     parser.add_argument("--grad_norm", type=float, default=1.0,
         help="Max gradient norm.")
     parser.add_argument("--use_grad_norm", action="store_true",
-        help="Clip the gradient norm.")
+        help="Clip the gradient.")
     parser.add_argument("--save_dir", default="models",
         help="Save directory.")
     parser.add_argument("--update_steps", type=int, default=8,
