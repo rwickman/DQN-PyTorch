@@ -18,7 +18,7 @@ class DQNActor:
         self._dqnet_target = DQNetwork(args, self._action_dim, obs_dim).to(device)
         self._dqnet_target.eval()
         self._replay_memory = PrioritizedExpReplay(self.args)#ReplayMemory(args)
-        self._optimizer = optim.Adam(self._dqnet.parameters(), lr=self.args.lr)
+        self._optimizer = optim.Adam(self._dqnet.parameters(), lr=self.args.lr, eps=1e-4)
         self._epsilon = args.epsilon
         self._loss_fn = nn.SmoothL1Loss()
         self._num_steps = 0
@@ -98,6 +98,7 @@ class DQNActor:
 
         self._optimizer.step()
         self._num_steps += 1
+        self._replay_memory._num_steps += 1
         self._replay_memory.update_priorities(indices, td_errors.detach())
 
         # Update target policy
@@ -153,6 +154,8 @@ class DQNActor:
         with open(os.path.join(self.args.save_dir, "model_meta.json")) as f:
             d = json.load(f)
             self._num_steps = d["num_steps"]
+
+        self._replay_memory._num_steps = self._num_steps
         self._replay_memory.load()
 
 

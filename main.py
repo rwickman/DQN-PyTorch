@@ -11,7 +11,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mem_cap", type=int, default=10000,
+    parser.add_argument("--mem_cap", type=int, default=65536,
         help="Maximum size of replay memory.")
     parser.add_argument("--epsilon", type=float, default=1.0,
         help="Initial epsilon value used for epsilon-greedy.")
@@ -41,9 +41,9 @@ if __name__ == "__main__":
         help="Number of input frames.")
     parser.add_argument("--eps", type=float, default=1e-6,
         help="Epsilon used for proportional priority.")
-    parser.add_argument("--per_alpha", type=float, default=0.9,
+    parser.add_argument("--per_alpha", type=float, default=0.4,
         help="Alpha used for proportional priority.")
-    parser.add_argument("--per_beta", type=float, default=0.4,
+    parser.add_argument("--per_beta", type=float, default=0.5,
         help="Beta used for proportional priority.")
     parser.add_argument("--grad_norm", type=float, default=1.0,
         help="Max gradient norm.")
@@ -51,8 +51,11 @@ if __name__ == "__main__":
         help="Clip the gradient.")
     parser.add_argument("--save_dir", default="models",
         help="Save directory.")
-    parser.add_argument("--update_steps", type=int, default=8,
+    parser.add_argument("--update_steps", type=int, default=4,
         help="How many episode timesteps elapsed before updating.")
+    parser.add_argument("--min_init_state", type=int, default=30000,
+        help="Minimum number of initial states before learning starts.")
+
 
     
 

@@ -45,6 +45,7 @@ class PrioritizedExpReplay:
         self.args = args
         self._sum_tree = SumTree(self.args)
         self._memory_file = os.path.join(self.args.save_dir, "memory.pt")
+        self._num_steps = 0
 
         if self.args.load:
             self.load()
@@ -108,7 +109,8 @@ class PrioritizedExpReplay:
             self._sum_tree._end_pos = model_dict["pos"]
 
     def _compute_priority(self, td_error):
-        return (abs(td_error) * 100 + self.args.eps) ** self.args.per_alpha 
+        per_alpha = min((1-self.args.per_alpha) * (self._num_steps/self.args.epsilon_decay) + self.args.per_alpha, 1.0)
+        return (abs(td_error) + self.args.eps) ** per_alpha 
 
 
 

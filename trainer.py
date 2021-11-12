@@ -70,7 +70,7 @@ class Trainer:
                 self._agent.add_ex(e_t)
                 state = next_state
                 
-                if e_i > 0 and self._agent.replay_len() > self.args.batch_size and (num_steps+1) % self.args.update_steps == 0:
+                if self._agent.replay_len() > self.args.min_init_state and self._agent.replay_len() > self.args.batch_size and (num_steps+1) % self.args.update_steps == 0:
                     self._agent.train()
 
                 num_steps += 1
@@ -78,7 +78,8 @@ class Trainer:
 
             self._env.reset()
             self._agent.save()
-            self.total_ep_reward.append(total_reward)
+            if self._agent.replay_len() > self.args.min_init_state:
+                self.total_ep_reward.append(total_reward)
             self._env.reset()
             print("total_reward", total_reward)
             print("Episode length", num_steps)
