@@ -21,6 +21,8 @@ if __name__ == "__main__":
         help="Minimum epsilon value used for epsilon-greedy.")
     parser.add_argument("--lr", type=float, default=3e-4,
         help="Parameter learning rate.")
+    parser.add_argument("--min_lr", type=float, default=1e-6,
+        help="Minimum learning rate.")
     parser.add_argument("--gamma", type=float, default=0.99,
         help="Gamma value used for future reward discount.")
     parser.add_argument("--batch_size", type=int, default=32,

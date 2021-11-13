@@ -19,6 +19,11 @@ class DQNActor:
         self._dqnet_target.eval()
         self._replay_memory = PrioritizedExpReplay(self.args)#ReplayMemory(args)
         self._optimizer = optim.Adam(self._dqnet.parameters(), lr=self.args.lr, eps=1e-4)
+        
+        # Compute the learning rate gamma to decay after to min_rl after epsilon_decay updates  
+        lr_gamma = (self.args.min_lr / self.args.lr) ** (1/self.args.epsilon_decay)
+        print("lr_gamma", lr_gamma)
+        self._lr_scheduler = optim.lr_scheduler.MultiplicativeLR(self._optimizer, lr_lambda=lambda e: lr_gamma)
         self._epsilon = args.epsilon
         self._loss_fn = nn.SmoothL1Loss()
         self._num_steps = 0
@@ -109,8 +114,16 @@ class DQNActor:
             print("td_targets", td_targets)
             print("td_errors", td_errors)
             print("replay_len", self.replay_len())
+            print("Learning rate", self._optimizer.param_groups[0]["lr"])
             self._dqnet_target.load_state_dict(self._dqnet.state_dict())
+
         
+        # Decay the learning rate
+        if self._optimizer.param_groups[0]["lr"] > self.args.min_lr:
+            self._lr_scheduler.step()
+        else:
+            self._optimizer.param_groups[0]["lr"] = self.args.min_lr
+
     def add_ex(self, e_t):
         """Add a step of experience."""
         with torch.no_grad():
@@ -138,7 +151,8 @@ class DQNActor:
     def save(self):
         model_dict = {
             "DQN" : self._dqnet.state_dict(),
-            "optimizer" : self._optimizer.state_dict()
+            "optimizer" : self._optimizer.state_dict(),
+            "lr_scheduler" : self._lr_scheduler.state_dict()
         }
         
         torch.save(model_dict, os.path.join(self.args.save_dir, self.args.model))
@@ -151,6 +165,7 @@ class DQNActor:
         self._dqnet.load_state_dict(model_dict["DQN"])
         self._dqnet_target.load_state_dict(model_dict["DQN"])
         self._optimizer.load_state_dict(model_dict["optimizer"])
+        self._lr_scheduler.load_state_dict(model_dict["lr_scheduler"])
         with open(os.path.join(self.args.save_dir, "model_meta.json")) as f:
             d = json.load(f)
             self._num_steps = d["num_steps"]
